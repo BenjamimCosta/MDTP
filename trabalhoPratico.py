@@ -6,8 +6,8 @@ from sklearn.cluster import KMeans
 import seaborn as sns
 
 # Definir as credenciais da API do spotify
-client_id = '1e56a728a4c34fb79be646f9a7e2bb4e'
-client_secret = '85d45ad9647d49d48819506ecf979641'
+client_id = ''
+client_secret = ''
 client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
 
 sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
