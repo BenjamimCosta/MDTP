@@ -3,13 +3,11 @@ import pandas as pd
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
 import seaborn as sns
-import matplotlib.pyplot as plt
 
 # Definir as credenciais da API do spotify
-client_id = ''
-client_secret = ''
+client_id = '1e56a728a4c34fb79be646f9a7e2bb4e'
+client_secret = '85d45ad9647d49d48819506ecf979641'
 client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
 
 sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
@@ -57,13 +55,8 @@ def func (song_id):
                 # Adicionar os atributos de áudio ao dicionário
                 track_data.update(track_features[i])
                 track_df = pd.DataFrame(track_data, index=[0])
-                if (i==0): 
-                  print("olaaaaaa")
-                  print(track_data)
                 # Adicionar o dicionário ao dataframe
                 df = pd.concat([df, track_df], ignore_index=True)
-
-
 
     # Remover as colunas que não são necessárias para o modelo de machine learning
     df_kmeans = df.drop(columns=["type", "uri", "track_href", "analysis_url","track_id", "track_name", "track_artist", "genre","id"])
@@ -71,17 +64,14 @@ def func (song_id):
     sns.heatmap(corr_matrix, vmin=-1, vmax=1, square=True, annot=True)
     sns.pairplot(df_kmeans)
     df_kmeans = df_kmeans.drop(columns=["duration_ms", "acousticness"])
-    df_csv = pd.read_csv("spotify.csv",nrows=50000)
-    df_csv.drop_duplicates(subset=['track_name',"artists"], keep="first", inplace=True)
-    df_csv2 = df_csv.drop(columns=["artists","track_id","track_name","album_name","popularity","duration_ms","explicit","track_genre","Column1", "acousticness"])
+    df_csv = pd.read_csv("spotify.csv",nrows=60000)
+    df_csv.drop_duplicates(subset=['track_name',"track_artist"], keep="first", inplace=True)
+    df_csv2 = df_csv.drop(columns=["track_artist","track_id","track_name","album_name","popularity","duration_ms","explicit","track_genre","Column1", "acousticness"])
     
+    print("Missing values dos dados vindos do dataset:")
     print(df_csv2.isna().sum())
+    #Juntar os dados todos
     df_kmeans = pd.concat([df_kmeans, df_csv2], ignore_index=True)
-    print("features do df_csv2:")
-    print(df_csv2.columns)
-    print("features do df_kmeans:")
-    print(df_kmeans.columns)
-
 
     if int(len(df_kmeans)/50) < 5:
         number_of_clusters = 5
@@ -96,18 +86,8 @@ def func (song_id):
 
     df_kmeans["cluster"] = model.labels_
 
-    # Adicionar uma coluna com os labels dos clusters ao dataframe original
     df = pd.concat([df,df_csv], ignore_index=True)
-
-    df = df.drop(columns=["type", "uri", "track_href", "analysis_url", "track_name", "track_artist", 'genre',"id",'duration_ms'])
-
-    df_concat = pd.concat([df, df_kmeans], axis=1)
-
-    print("dataframe inicial:")
-    print(df)
-    print("dataframe final:")
-    print(df_concat)
-    print(df_concat.isna().sum())
+    df_concat = df.assign(cluster = df_kmeans["cluster"])
 
     return model, df_concat
 
@@ -121,9 +101,8 @@ def recommend_songs(song):
     song_features = sp.audio_features(song)[0]
     song_data.update(song_features)
 
-    print("song id" + str(song_data['id']))
     model, df_concat = func(song_data['id'])
-
+    
     # Remover os atributos que não são necessárias para o modelo de machine learning
     song_data.pop("type")
     song_data.pop("uri")
@@ -140,15 +119,13 @@ def recommend_songs(song):
     song_cluster = model.predict(song_df)[0]
     # Filtrar o dataframe original para obter as músicas do mesmo cluster da música de input
     cluster_df = df_concat[df_concat["cluster"] == song_cluster]
-    print(song_cluster)
-    print(cluster_df)
 
     recommendations = cluster_df
     return list(recommendations.itertuples(index=False, name=None))
 
 def main():
     
-    song = "https://open.spotify.com/track/7MXVkk9YMctZqd1Srtv4MB?si=639f05cbe46a426a"
+    song = "https://open.spotify.com/track/0dQZmVKzYF3F9W64ESs8h4?si=8b13009128564d2e"
     # get track_id a partir da string fornecida em "song"
     parts = (song.split('/'))[-1].split('?')
     song_id = parts[0]
