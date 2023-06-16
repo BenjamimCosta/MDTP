@@ -3,11 +3,13 @@ import pandas as pd
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from sklearn.cluster import KMeans
+from sklearn.neighbors import KNeighborsClassifier
 import seaborn as sns
+import numpy as np
 
 # Definir as credenciais da API do spotify
-client_id = ''
-client_secret = ''
+client_id = '1e56a728a4c34fb79be646f9a7e2bb4e'
+client_secret = '85d45ad9647d49d48819506ecf979641'
 client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
 
 sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
@@ -38,13 +40,14 @@ def func (song_id):
             track_names = []
             track_artists = []
             for track in tracks["items"]:
-                track_id = track["track"]["id"]
-                track_name = track["track"]["name"]
-                track_artist = track["track"]["artists"][0]["name"]
-                if ((track_id not in track_ids) and (track_id != song_id)):
-                    track_ids.append(track_id)
-                    track_names.append(track_name)
-                    track_artists.append(track_artist)
+                if track["track"] != None:###
+                    track_id = track["track"]["id"]
+                    track_name = track["track"]["name"]
+                    track_artist = track["track"]["artists"][0]["name"]
+                    if ((track_id not in track_ids) and (track_id != song_id)):
+                        track_ids.append(track_id)
+                        track_names.append(track_name)
+                        track_artists.append(track_artist)
 
             track_features = sp.audio_features(track_ids)
             for i, track_id in enumerate(track_ids):
@@ -72,6 +75,24 @@ def func (song_id):
     print(df_csv2.isna().sum())
     #Juntar os dados todos
     df_kmeans = pd.concat([df_kmeans, df_csv2], ignore_index=True)
+
+    print(df_kmeans.columns)
+    print(df_kmeans["loudness"])
+    print(df_kmeans["tempo"])
+    print(df_kmeans["key"])
+    print(df_kmeans["time_signature"])
+
+    df_kmeans['loudness'] = (df_kmeans['loudness'] - df_kmeans['loudness'].min()) / (df_kmeans['loudness'].max() - df_kmeans['loudness'].min())
+    df_kmeans['tempo'] = (df_kmeans['tempo'] - df_kmeans['tempo'].min()) / (df_kmeans['tempo'].max() - df_kmeans['tempo'].min())
+    df_kmeans['key'] = (df_kmeans['key'] - df_kmeans['key'].min()) / (df_kmeans['key'].max() - df_kmeans['key'].min())
+    df_kmeans['time_signature'] = (df_kmeans['time_signature'] - df_kmeans['time_signature'].min()) / (df_kmeans['time_signature'].max() - df_kmeans['time_signature'].min())
+
+    print(df_kmeans["loudness"])
+    print(df_kmeans["tempo"])
+    print(df_kmeans["key"])
+    print(df_kmeans["time_signature"])
+
+    df_kmeans.to_csv("handledData.csv")
 
     if int(len(df_kmeans)/50) < 5:
         number_of_clusters = 5
@@ -125,7 +146,7 @@ def recommend_songs(song):
 
 def main():
     
-    song = "https://open.spotify.com/track/0dQZmVKzYF3F9W64ESs8h4?si=8b13009128564d2e"
+    song = "https://open.spotify.com/track/3yfqSUWxFvZELEM4PmlwIR?si=72e9e19aee5b4f25"
     # get track_id a partir da string fornecida em "song"
     parts = (song.split('/'))[-1].split('?')
     song_id = parts[0]
